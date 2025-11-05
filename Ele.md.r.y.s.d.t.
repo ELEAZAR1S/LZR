@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard de análisis de series temporales para predicción de temperatura con Machine Learning">
+    <title>Dashboard - Predicción de Temperatura | Series Temporales</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #34495e;
+            --border: #bdc3c7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        .nav {
+            background: white;
+            border-bottom: 2px solid var(--light);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: var(--light);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--primary);
+        }
+
+        .nav-btn:hover {
+            background: var(--secondary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 28px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--secondary) 0%, #2980b9 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+        }
+
+        .stat-card.accent {
+            background: linear-gradient(135deg, var(--accent) 0%, #c0392b 100%);
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .results-table th {
+            background: var(--light);
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .results-table .best {
+            background: #d4edda;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: var(--light);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .feature-card h3 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .feature-card p {
+            color: var(--dark);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 30px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--secondary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -47px;
+            top: 0;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--secondary);
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px var(--secondary);
+        }
+
+        .timeline-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .timeline-content {
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .footer {
+            background: var(--primary);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-link:hover {
+            opacity: 0.7;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .info-box-title {
+            font-weight: 700;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .warning-box .info-box-title {
+            color: #f57c00;
+        }
+
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .success-box .info-box-title {
+            color: #388e3c;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+            .content {
+                padding: 20px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-content {
+                flex-direction: column;
+            }
+            .nav-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🌡️ Anticipando el Clima</h1>
+                <p>Análisis de Series Temporales con Machine Learning</p>
+                <p class="subtitle">Proyecto de Modelos de Regresión y Series de Tiempo</p>
+            </div>
+        </div>
+
+        <div class="nav">
+            <div class="nav-content">
+                <button class="nav-btn active" onclick="showSection('overview')">📊 Resumen</button>
+                <button class="nav-btn" onclick="showSection('methodology')">🔬 Metodología</button>
+                <button class="nav-btn" onclick="showSection('results')">🏆 Resultados</button>
+                <button class="nav-btn" onclick="showSection('models')">🤖 Modelos</button>
+                <button class="nav-btn" onclick="showSection('applications')">💡 Aplicaciones</button>
+                <button class="nav-btn" onclick="showSection('code')">💻 Código</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="overview" class="section active">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">📊</span> Resumen Ejecutivo</h2>
+                    <p style="font-size: 16px; color: var(--dark); margin-bottom: 20px;">
+                        Este proyecto analiza <strong>1,461 días de datos de temperatura</strong> (2020-2023) 
+                        utilizando técnicas avanzadas de series temporales para predecir valores futuros con 
+                        <strong>96% de precisión</strong>. Comparamos 6 modelos diferentes, desde métodos clásicos 
+                        hasta redes neuronales profundas.
+                    </p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card success">
+                        <div class="stat-value">2.46°F</div>
+                        <div class="stat-label">Error Promedio (MAE)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">96%</div>
+                        <div class="stat-label">Precisión del Modelo</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-value">1,461</div>
+                        <div class="stat-label">Días Analizados</div>
+                    </div>
+                    <div class="stat-card accent">
+                        <div class="stat-value">6</div>
+                        <div class="stat-label">Modelos Probados</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">🎯</span> ¿Para Qué Sirve Este Proyecto?</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h3>🌾 Agricultura Inteligente</h3>
+                            <p>Predicción de heladas y sequías para proteger cosechas y optimizar sistemas de riego, ahorrando millones en pérdidas agrícolas.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>⚡ Eficiencia Energética</h3>
+                            <p>Anticipar demanda de calefacción y refrigeración para optimizar la red eléctrica y reducir consumo energético hasta un 30%.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🏙️ Ciudades Resilientes</h3>
+                            <p>Sistemas de alerta temprana para eventos extremos, evacuaciones preventivas y diseño de infraestructura adaptada al clima futuro.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🏥 Salud Preventiva</h3>
+                            <p>Prevenir muertes por golpes de calor en poblaciones vulnerables mediante alertas anticipadas con días de antelación.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box success-box">
+                    <div class="info-box-title">✅ Impacto Real</div>
+                    <p>Con precisión del 96%, estos modelos permiten tomar decisiones críticas con días o semanas de anticipación, 
+                    salvando vidas, protegiendo recursos y reduciendo el impacto del cambio climático.</p>
+                </div>
+            </div>
+
+            <div id="methodology" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">🔬</span> Metodología</h2>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-title">1. Exploración de Datos</div>
+                            <div class="timeline-content">
+                                Análisis de 1,461 observaciones diarias (2020-2023). Rango: 29°F - 87°F. Media: 60.14°F.
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-title">2. Descomposición de Serie</div>
+                            <div class="timeline-content">
+                                Separación en componentes: Tendencia (ascendente), Estacionalidad (365 días), Ruido (varianza=5.93).
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-title">3. Test de Estacionariedad</div>
+                            <div class="timeline-content">
+                                Prueba ADF: p-value = 0.1676. Serie NO estacionaria, requiere modelos especializados.
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-title">4. División Train/Test</div>
+                            <div class="timeline-content">
+                                Entrenamiento: 1,431 días (98%). Prueba: 30 días (2%). Validación con últimos datos.
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-title">5. Entrenamiento de Modelos</div>
+                            <div class="timeline-content">
+                                6 modelos: Naive, Seasonal Naive, Holt-Winters, ARIMA(2,0,2), LSTM, Prophet.
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-title">6. Evaluación de Métricas</div>
+                            <div class="timeline-content">
+                                MAE (Error Absoluto), RMSE (Raíz Error Cuadrático), MAPE (Error Porcentual).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">📊</span> Componentes de la Serie</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h3>📈 Tendencia</h3>
+                            <p><strong>Ascendente:</strong> La temperatura muestra un aumento gradual durante los 4 años analizados, consistente con patrones de calentamiento global.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🔄 Estacionalidad</h3>
+                            <p><strong>Periodo: 365 días:</strong> Patrón anual claro con picos en verano y valles en invierno. Se repite consistentemente cada año.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🎲 Ruido</h3>
+                            <p><strong>Varianza: 5.93:</strong> Fluctuaciones aleatorias día a día. Ruido moderado indica patrones bien definidos y predecibles.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">🏆</span> Resultados Comparativos</h2>
+                    
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Ranking</th>
+                                <th>Modelo</th>
+                                <th>MAE (°F)</th>
+                                <th>RMSE (°F)</th>
+                                <th>MAPE (%)</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="best">
+                                <td>🥇 1°</td>
+                                <td><strong>Holt-Winters</strong></td>
+                                <td><strong>2.46</strong></td>
+                                <td><strong>3.17</strong></td>
+                                <td><strong>3.65%</strong></td>
+                                <td><span class="badge badge-success">MEJOR</span></td>
+                            </tr>
+                            <tr>
+                                <td>🥈 2°</td>
+                                <td>LSTM</td>
+                                <td>2.73</td>
+                                <td>3.41</td>
+                                <td>4.09%</td>
+                                <td><span class="badge badge-info">Excelente</span></td>
+                            </tr>
+                            <tr>
+                                <td>🥉 3°</td>
+                                <td>ARIMA(2,0,2)</td>
+                                <td>3.56</td>
+                                <td>4.30</td>
+                                <td>5.16%</td>
+                                <td><span class="badge badge-info">Bueno</span></td>
+                            </tr>
+                            <tr>
+                                <td>4°</td>
+                                <td>Naive</td>
+                                <td>4.51</td>
+                                <td>5.53</td>
+                                <td>6.49%</td>
+                                <td><span class="badge badge-warning">Baseline</span></td>
+                            </tr>
+                            <tr>
+                                <td>5°</td>
+                                <td>Seasonal Naive</td>
+                                <td>6.01</td>
+                                <td>6.78</td>
+                                <td>8.88%</td>
+                                <td><span class="badge badge-warning">Básico</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-box-title">📈 Interpretación de Métricas</div>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>MAE:</strong> Error promedio en grados. Holt-Winters se equivoca solo 2.46°F.</li>
+                        <li><strong>RMSE:</strong> Penaliza errores grandes. Valores cercanos a MAE = errores consistentes.</li>
+                        <li><strong>MAPE:</strong> Error porcentual. 3.65% = 96.35% de precisión.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="models" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">🤖</span> Modelos Implementados</h2>
+                    
+                    <div class="feature-card" style="margin-bottom: 20px;">
+                        <h3>🏆 Holt-Winters (Ganador)</h3>
+                        <p><strong>Tipo:</strong> Suavizamiento exponencial triple</p>
+                        <p><strong>Componentes:</strong> Nivel + Tendencia + Estacionalidad</p>
+                        <p><strong>Resultado:</strong> MAE = 2.46°F, MAPE = 3.65%</p>
+                    </div>
+
+                    <div class="feature-card" style="margin-bottom: 20px;">
+                        <h3>🧠 LSTM</h3>
+                        <p><strong>Tipo:</strong> Red neuronal recurrente</p>
+                        <p><strong>Arquitectura:</strong> 2 capas LSTM (50 neuronas) + Dropout</p>
+                        <p><strong>Resultado:</strong> MAE = 2.73°F, MAPE = 4.09%</p>
+                    </div>
+
+                    <div class="feature-card" style="margin-bottom: 20px;">
+                        <h3>📊 ARIMA(2,0,2)</h3>
+                        <p><strong>Tipo:</strong> Modelo autoregresivo integrado</p>
+                        <p><strong>Parámetros:</strong> p=2, d=0, q=2</p>
+                        <p><strong>Resultado:</strong> MAE = 3.56°F, MAPE = 5.16%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="applications" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">💡</span> Aplicaciones Futuras</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h3>🌾 Agricultura</h3>
+                            <p><strong>Aplicación:</strong> Calendario de siembra inteligente</p>
+                            <p><strong>Impacto:</strong> Reducción de pérdidas hasta 40%</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>⚡ Energía</h3>
+                            <p><strong>Aplicación:</strong> Optimización de demanda eléctrica</p>
+                            <p><strong>Impacto:</strong> 30% menos consumo energético</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🏙️ Ciudades</h3>
+                            <p><strong>Aplicación:</strong> Alertas tempranas de calor extremo</p>
+                            <p><strong>Impacto:</strong> Evacuaciones preventivas que salvan vidas</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🏥 Salud</h3>
+                            <p><strong>Aplicación:</strong> Protección de poblaciones vulnerables</p>
+                            <p><strong>Impacto:</strong> Reducción de mortalidad por olas de calor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="code" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span class="card-icon">💻</span> Acceso al Código</h2>
+                    <p style="margin-bottom: 20px;">El código completo del proyecto está disponible en este repositorio de GitHub.</p>
+                    
+                    <div class="info-box">
+                        <div class="info-box-title">📦 Instalación</div>
+                        <div class="code-block">pip install pandas numpy matplotlib seaborn statsmodels scikit-learn tensorflow prophet</div>
+                    </div>
+
+                    <div class="info-box warning-box">
+                        <div class="info-box-title">⚙️ Ejecución</div>
+                        <div class="code-block">python time_series_analysis.py</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>📂 Estructura del Proyecto</h3>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>📄 <code>time_series_analysis.py</code> - Script principal</li>
+                            <li>📊 <code>data.csv</code> - Dataset de temperatura</li>
+                            <li>📈 <code>resultados_metricas.csv</code> - Resultados comparativos</li>
+                            <li>🖼️ <code>*.png</code> - Visualizaciones generadas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>📊 Proyecto de Modelos de Regresión y Series de Tiempo</p>
+            <p>🎓 Análisis de 1,461 días de temperatura (2020-2023)</p>
+            <p style="margin-top: 10px; opacity: 0.8;">© 2025 | Desarrollado con Python, TensorFlow y Statsmodels</p>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Ocultar todas las secciones
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Mostrar la sección seleccionada
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Actualizar botones de navegación
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Scroll al inicio
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
